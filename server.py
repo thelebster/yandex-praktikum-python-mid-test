@@ -23,6 +23,27 @@ def healthcheck():
         return jsonify({"error": "Service unavailable."}), 500
 
 
+@app.route('/search', methods=['GET'])
+def search():
+    try:
+        search_key = request.args.get('key', '')
+        if not search_key.strip():
+            return jsonify({"error": "Search key could not be empty."}), 400
+
+        conn = sqlite3.connect('/var/sqlite/db/movies.db')
+        cursor = conn.cursor()
+        sql_query = "SELECT movies.id, movies.title, movies.description, movies.file_path " \
+                    "FROM movies_index " \
+                    "LEFT JOIN movies ON movies.id = movies_index.rowid " \
+                    "WHERE movies_index MATCH ?"
+        cursor.execute(sql_query, ('%s*' % search_key,))
+        results = cursor.fetchall()
+        return jsonify(results)
+    except Exception as e:
+        logging.error("Unexpected error: %s" % e)
+        return jsonify({"error": "Service unavailable."}), 500
+
+
 FLASK_HOST = os.getenv('FLASK_HOST', '127.0.0.1')
 FLASK_PORT = os.getenv('FLASK_PORT', 5000)
 if __name__ == '__main__':

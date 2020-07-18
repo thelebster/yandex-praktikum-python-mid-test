@@ -2,7 +2,7 @@ FROM python:3.7-slim
 LABEL maintainer="Anton Lebedev <mailbox@lebster.me>"
 WORKDIR /app
 RUN apt-get update \
-    && apt-get install -y sqlite jq
+    && apt-get install -y sqlite jq curl
 RUN pip install pipenv \
     && pip install gunicorn \
     && pip install gevent
@@ -11,6 +11,7 @@ RUN cd /tmp && pipenv lock --requirements > requirements.txt \
     && pip install -r /tmp/requirements.txt
 COPY server.py /app/server.py
 COPY common/movies.json /tmp/
+COPY add-movies.sh /
 COPY entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 ENV FLASK_APP=${FLASK_APP}

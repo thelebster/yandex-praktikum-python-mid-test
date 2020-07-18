@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  api-gateway:
+    build: .
+    environment:
+      - APP_PORT=${APP_PORT}
+      - FLASK_PORT=${FLASK_PORT}
+      - FLASK_HOST=${FLASK_HOST}
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_APP=${FLASK_APP}
+      - GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS}
+    image: ypp-api-gateway
+    hostname: ypp-api-gateway
+    container_name: ypp-api-gateway
+    restart: always
+    ports:
+      - ${APP_PORT}:${FLASK_PORT}
+    volumes:
+      - ./data/db:/var/sqlite/db

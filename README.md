@@ -16,6 +16,8 @@ https://praktikum.yandex.ru
 * [Command Line Shell For SQLite](https://sqlite.org/cli.html)
 * [SQLite FTS5 Extension](https://www.sqlite.org/fts5.html) — FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.
 * [Full-text Query Syntax](https://www.sqlite.org/fts5.html#full_text_query_syntax)
+* [Elasticsearch Reference](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
+* [Multi-match query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-multi-match-query.html)
 
 ## Usage
 

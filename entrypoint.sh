@@ -59,4 +59,11 @@ EOF
   sqlite3 /var/sqlite/db/movies.db -separator "," -cmd ".mode csv" ".import /tmp/movies.csv movies" ".quit"
 fi
 
+ES_STATUS=$(curl -X GET http://localhost:9200/)
+if [ -n "${ES_STATUS}" ]; then
+  echo $ES_STATUS
+
+  /usr/local/bin/python es_init.py
+fi
+
 exec "$@"

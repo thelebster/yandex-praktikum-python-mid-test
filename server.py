@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import os
-import json
 import logging
 import sqlite3
 from elasticsearch import Elasticsearch

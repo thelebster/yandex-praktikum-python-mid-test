@@ -3,8 +3,9 @@ import sqlite3
 from elasticsearch import Elasticsearch
 
 SQLITE_DB_PATH = os.getenv('SQLITE_DB_PATH', '/var/sqlite/db/movies.db')
+ES_HOST = os.getenv('ES_HOST', 'localhost')
 
-es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
 if es.ping():
     # Index settings
     settings = {

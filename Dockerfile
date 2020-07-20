@@ -2,7 +2,7 @@ FROM python:3.7-slim
 LABEL maintainer="Anton Lebedev <mailbox@lebster.me>"
 WORKDIR /app
 RUN apt-get update \
-    && apt-get install -y sqlite jq curl
+    && apt-get install -y sqlite jq curl netcat
 RUN pip install pipenv \
     && pip install gunicorn \
     && pip install gevent

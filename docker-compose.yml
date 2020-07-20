@@ -11,14 +11,18 @@ services:
       - FLASK_APP=${FLASK_APP}
       - GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS}
       - SQLITE_DB_PATH=${SQLITE_DB_PATH}
+      - ES_HOST=${ES_HOST}
     image: ypp-api-gateway
     hostname: ypp-api-gateway
     container_name: ypp-api-gateway
-    restart: always
+    links:
+      - elasticsearch
     ports:
       - ${APP_PORT}:${FLASK_PORT}
     volumes:
       - ./data/db:/var/sqlite/db
+    networks:
+      - default
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
@@ -30,6 +34,8 @@ services:
       - ./data/elasticsearch:/usr/share/elasticsearch/data
     ports:
       - 127.0.0.1:9200:9200
+    networks:
+      - default
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.8.0
@@ -41,3 +47,8 @@ services:
       - elasticsearch
     depends_on:
       - elasticsearch
+    networks:
+      - default
+
+networks:
+  default:

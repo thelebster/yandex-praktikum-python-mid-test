@@ -1,9 +1,15 @@
 #!/bin/sh
 set -e
 
+if [ -n "${SQLITE_DB_PATH}" ]; then
+  SQLITE_DB_PATH=$SQLITE_DB_PATH
+else
+  SQLITE_DB_PATH=/var/sqlite/db/movies.db
+fi
+
 mkdir -p /var/sqlite/db
-if [ ! -f /var/sqlite/db/movies.db ]; then
-  sqlite3 /var/sqlite/db/movies.db <<EOF
+if [ ! -f $SQLITE_DB_PATH ]; then
+  sqlite3 $SQLITE_DB_PATH <<EOF
   CREATE TABLE movies (
     id text primary key,
     title text,
@@ -56,14 +62,39 @@ EOF
     > /tmp/movies.csv
 
   # Import movies from the csv file.
-  sqlite3 /var/sqlite/db/movies.db -separator "," -cmd ".mode csv" ".import /tmp/movies.csv movies" ".quit"
+  sqlite3 $SQLITE_DB_PATH -separator "," -cmd ".mode csv" ".import /tmp/movies.csv movies" ".quit"
 fi
 
-ES_STATUS=$(curl -X GET http://localhost:9200/)
+if [ -n "${ES_HOST}" ]; then
+  ES_HOST=$ES_HOST
+else
+  ES_HOST=ypp-es
+fi
+
+# Wait for Elasticsearch
+MAX_RETRIES=20
+retry=1
+while ! nc -z $ES_HOST 9200;
+do
+  if [ ""$retry -gt $MAX_RETRIES ]; then
+    echo "Could not connect to Elasticsearch on http://${ES_HOST}:9200/"
+    break;
+  fi
+  echo "Waiting for Elasticsearch...";
+  retry=$((retry + 1))
+  sleep 5;
+done;
+
+echo "Connected to Elasticsearch on http://${ES_HOST}:9200/"
+ES_STATUS=$(curl -X GET http://${ES_HOST}:9200/)
 if [ -n "${ES_STATUS}" ]; then
   echo $ES_STATUS
 
+  ES_HOST=$ES_HOST \
+  SQLITE_DB_PATH=$SQLITE_DB_PATH \
   /usr/local/bin/python /app/es_init.py
 fi
+
+export ES_HOST=$ES_HOST
 
 exec "$@"

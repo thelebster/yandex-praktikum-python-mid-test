@@ -9,6 +9,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 app = Flask(__name__)
 
 SQLITE_DB_PATH = os.getenv('SQLITE_DB_PATH', '/var/sqlite/db/movies.db')
+ES_HOST = os.getenv('ES_HOST', 'localhost')
 
 
 @app.route('/healthcheck', methods=['GET'])
@@ -16,7 +17,7 @@ def healthcheck():
     try:
         logging.info("Service is up and running.")
         sqlite_version = sqlite3.sqlite_version
-        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
         es_status = None
         try:
             es_status = es.info()
@@ -45,7 +46,7 @@ def sqlite_search(search_key):
 
 
 def elastic_search(search_key):
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
     search_object = {
         'query': {
             'multi_match': {
@@ -123,7 +124,7 @@ def movies(movie_id=None):
                     'title': movie_title,
                     'description': movie_description,
                 }
-                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
                 index_result = es.index(index='movies_index', id=movie_id, body=movie_obj)
             except sqlite3.Error as e:
                 conn.rollback()
@@ -156,7 +157,7 @@ def movies(movie_id=None):
                     'title': movie_title,
                     'description': movie_description,
                 }
-                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
                 index_result = es.index(index='movies_index', id=movie_id, body=movie_obj)
             except sqlite3.Error as e:
                 conn.rollback()
@@ -178,7 +179,7 @@ def movies(movie_id=None):
                                "WHERE id = ?", ('%s' % movie_id,))
                 conn.commit()
                 # Delete a document from the Elasticsearch index
-                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                es = Elasticsearch([{'host': ES_HOST, 'port': 9200}])
                 index_result = es.delete(index='movies_index', id=movie_id)
             except sqlite3.Error as e:
                 conn.rollback()

@@ -27,8 +27,30 @@ cp .env.sample .env
 docker-compose up --build
 ```
 
-* Run search using sqlite fts: http://127.0.0.1:5000/search?key=географ
-* Run search using elastic: http://127.0.0.1:5000/search?key=географ&index=elastic
+* Run search using sqlite fts: `curl -X GET 'http://127.0.0.1:5000/search?key=географ'`
+* Run search using elastic: `curl -X GET 'http://127.0.0.1:5000/search?key=географ&index=elastic'`
+* List movies: `curl -X GET 'http://127.0.0.1:5000/movies'`
+* Retrieve a single movie: `curl -X GET 'http://127.0.0.1:5000/movies/105740'`
+* Delete a single movie: `curl -X DELETE 'http://127.0.0.1:5000/movies/105740'`
+* Insert a single movie:
+```
+curl --location --request POST 'http://127.0.0.1:5000/movies/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "id": 100500,
+    "title": "Super Movie",
+    "description": "Yo! Some super movie description."
+}'
+```
+* Update a single movie:
+```
+curl --location --request PUT 'http://127.0.0.1:5000/movies/100500' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "title": "Super Movie (updated)",
+    "description": "Yo! Some super movie description (updated)."
+}'
+```
 
 Running the Elasticsearch container separately could be useful during development.
 

@@ -1,5 +1,8 @@
+import os
 import sqlite3
 from elasticsearch import Elasticsearch
+
+SQLITE_DB_PATH = os.getenv('SQLITE_DB_PATH', '/var/sqlite/db/movies.db')
 
 es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 if es.ping():
@@ -23,7 +26,7 @@ if es.ping():
         }
     }
     es.indices.create(index='movies_index', ignore=400, body=settings)
-    conn = sqlite3.connect('/var/sqlite/db/movies.db')
+    conn = sqlite3.connect(SQLITE_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM movies;")
     results = cursor.fetchall()

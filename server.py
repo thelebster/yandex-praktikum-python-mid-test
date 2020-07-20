@@ -8,6 +8,8 @@ logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
 app = Flask(__name__)
 
+SQLITE_DB_PATH = os.getenv('SQLITE_DB_PATH', '/var/sqlite/db/movies.db')
+
 
 @app.route('/healthcheck', methods=['GET'])
 def healthcheck():
@@ -31,7 +33,7 @@ def healthcheck():
 
 
 def sqlite_search(search_key):
-    conn = sqlite3.connect('/var/sqlite/db/movies.db')
+    conn = sqlite3.connect(SQLITE_DB_PATH)
     cursor = conn.cursor()
     sql_query = "SELECT movies.id, movies.title, movies.description, movies.file_path " \
                 "FROM movies_index " \
@@ -75,6 +77,122 @@ def search():
     except Exception as e:
         logging.error("Unexpected error: %s" % e)
         return jsonify({"error": "Service unavailable."}), 500
+
+
+@app.route('/movies', methods=['GET', 'POST'])
+@app.route('/movies/<int:movie_id>', methods=['GET', 'PUT', 'DELETE'])
+def movies(movie_id=None):
+    try:
+        if request.method == 'GET':
+            if movie_id is not None:
+                conn = sqlite3.connect(SQLITE_DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, title, description FROM movies "
+                               "WHERE id = ?", ('%d' % movie_id,))
+                results = cursor.fetchone()
+                return jsonify(results)
+
+            offset = int(request.args.get('offset', 0))
+            conn = sqlite3.connect(SQLITE_DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, title, description FROM movies "
+                           "LIMIT 20 OFFSET ?", ('%d' % offset,))
+            results = cursor.fetchall()
+            return jsonify(results)
+
+        if request.method == 'POST':
+            movie_id = str(request.json.get('id', ''))
+            if not movie_id.strip():
+                return jsonify({"error": "Movie id could not be empty."}), 400
+
+            movie_title = request.json.get('title', '')
+            if not movie_title.strip():
+                return jsonify({"error": "Movie title could not be empty."}), 400
+
+            movie_description = request.json.get('description', '')
+            conn = sqlite3.connect(SQLITE_DB_PATH)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("INSERT INTO movies (id, title, description) "
+                           "VALUES (?, ?, ?)", ('%s' % movie_id, '%s' % movie_title, '%s' % movie_description))
+                conn.commit()
+                # Store a document in the Elasticsearch index
+                movie_obj = {
+                    'type': 'movies',
+                    'id': movie_id,
+                    'title': movie_title,
+                    'description': movie_description,
+                }
+                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                index_result = es.index(index='movies_index', id=movie_id, body=movie_obj)
+            except sqlite3.Error as e:
+                conn.rollback()
+                raise e
+            except Exception as e:
+                raise e
+            finally:
+                cursor.close()
+            return jsonify({
+                'rowid': cursor.lastrowid,
+                'index': index_result,
+            })
+
+        if request.method == 'PUT':
+            movie_title = request.json.get('title', '')
+            if not movie_title.strip():
+                return jsonify({"error": "Movie title could not be empty."}), 400
+
+            movie_description = request.json.get('description', '')
+            conn = sqlite3.connect(SQLITE_DB_PATH)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("UPDATE movies SET title = ?, description = ?"
+                               "WHERE id = ?", ('%s' % movie_title, '%s' % movie_description, '%s' % movie_id))
+                conn.commit()
+                # Update a document in the Elasticsearch index
+                movie_obj = {
+                    'type': 'movies',
+                    'id': movie_id,
+                    'title': movie_title,
+                    'description': movie_description,
+                }
+                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                index_result = es.index(index='movies_index', id=movie_id, body=movie_obj)
+            except sqlite3.Error as e:
+                conn.rollback()
+                raise e
+            except Exception as e:
+                raise e
+            finally:
+                cursor.close()
+            return jsonify({
+                'rowid': cursor.lastrowid,
+                'index': index_result,
+            })
+
+        if request.method == 'DELETE':
+            conn = sqlite3.connect(SQLITE_DB_PATH)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("DELETE FROM movies "
+                               "WHERE id = ?", ('%s' % movie_id,))
+                conn.commit()
+                # Delete a document from the Elasticsearch index
+                es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+                index_result = es.delete(index='movies_index', id=movie_id)
+            except sqlite3.Error as e:
+                conn.rollback()
+                raise e
+            except Exception as e:
+                raise e
+            finally:
+                cursor.close()
+            return jsonify({
+                'index': index_result,
+            })
+    except Exception as e:
+        logging.error("Unexpected error: %s" % e)
+        return jsonify({"error": "%s" % e}), 500
 
 
 FLASK_HOST = os.getenv('FLASK_HOST', '127.0.0.1')

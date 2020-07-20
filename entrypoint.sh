@@ -63,7 +63,7 @@ ES_STATUS=$(curl -X GET http://localhost:9200/)
 if [ -n "${ES_STATUS}" ]; then
   echo $ES_STATUS
 
-  /usr/local/bin/python es_init.py
+  /usr/local/bin/python /app/es_init.py
 fi
 
 exec "$@"

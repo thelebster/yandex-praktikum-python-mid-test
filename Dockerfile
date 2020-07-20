@@ -10,6 +10,7 @@ COPY Pipfile* /tmp/
 RUN cd /tmp && pipenv lock --requirements > requirements.txt \
     && pip install -r /tmp/requirements.txt
 COPY server.py /app/server.py
+COPY es_init.py /app/es_init.py
 COPY common/movies.json /tmp/
 COPY add-movies.sh /
 COPY entrypoint.sh /
